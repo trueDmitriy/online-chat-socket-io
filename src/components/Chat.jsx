@@ -22,21 +22,28 @@ const Chat = () => {
   const username = params.get("username");
 
   useEffect(() => {
-    socket.emit("join", {
-      username: username,
-      room: room,
-    });
+    const join = () => socket.emit("join", { username, room });
+
+    join();
+    socket.io.on("reconnect", join);
+
+    return () => {
+      socket.io.off("reconnect", join);
+    };
   }, [username, room]);
 
   useEffect(() => {
-    socket.on("message", ({ data }) => {
-      setState((prev) => [...prev, data]);
-    });
+    const onMessage = ({ data }) => setState((prev) => [...prev, data]);
+    const onRoomData = ({ data: { users } }) => setUsers(users.length);
 
-    socket.on("roomData", ({ data: { users } }) => {
-      setUsers(users.length);
-    });
-  }, [username, room]);
+    socket.on("message", onMessage);
+    socket.on("roomData", onRoomData);
+
+    return () => {
+      socket.off("message", onMessage);
+      socket.off("roomData", onRoomData);
+    };
+  }, []);
 
   const leftRoom = () => {
     socket.emit("leftRoom", {
