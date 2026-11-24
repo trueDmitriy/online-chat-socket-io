@@ -21,6 +21,23 @@ const Chat = () => {
   const room = params.get("room");
   const username = params.get("username");
 
+  useEffect(() => {
+    socket.emit("join", {
+      username: username,
+      room: room,
+    });
+  }, [username, room]);
+
+  useEffect(() => {
+    socket.on("message", ({ data }) => {
+      setState((prev) => [...prev, data]);
+    });
+
+    socket.on("roomData", ({ data: { users } }) => {
+      setUsers(users.length);
+    });
+  }, [username, room]);
+
   const leftRoom = () => {
     socket.emit("leftRoom", {
       username: username,
@@ -47,23 +64,6 @@ const Chat = () => {
 
     setMessage("");
   };
-
-  useEffect(() => {
-    socket.emit("join", {
-      username: username,
-      room: room,
-    });
-  }, [params]);
-
-  useEffect(() => {
-    socket.on("message", ({ data }) => {
-      setState((prev) => [...prev, data]);
-    });
-
-    socket.on("roomData", ({ data: { users } }) => {
-      setUsers(users.length);
-    });
-  }, []);
 
   return (
     <div className={styles.wrap}>
